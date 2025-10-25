@@ -1,54 +1,41 @@
 import streamlit as st
 import pickle
-import nltk
-import os
-from nltk.corpus import stopwords
-from nltk.stem.porter import PorterStemmer
-import string
+import re
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
-nltk.data.path.append(os.path.join(os.path.dirname(__file__), 'nltk_data'))
+# Load vectorizer and model
+cv = pickle.load(open('vectorizer.pkl', 'rb'))
+model = pickle.load(open('model.pkl', 'rb'))
 
-ps = PorterStemmer()
-
-cv = pickle.load(open('vectorizer.pkl','rb'))
-model = pickle.load(open('model.pkl','rb'))
-
+# Text preprocessing function (no NLTK)
 def transform_text(text):
-    text = text.lower()
-    text = nltk.word_tokenize(text)
+    text = text.lower()  # lowercase
+    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)  # remove punctuation
+    words = text.split()  # tokenize
+    words = [word for word in words if word not in ENGLISH_STOP_WORDS]  # remove stopwords
+    return " ".join(words)
 
-    y = []
-    for i in text:
-        if i.isalnum():
-            y.append(i)
+# Streamlit UI
+st.title("📩 SMS Spam Classifier")
+st.write("Enter a message below to check if it's Spam or Not Spam.")
 
-    text = y[:]
-    y.clear()
-
-    for i in text:
-        if i not in stopwords.words('english') and i not in string.punctuation:
-            y.append(i)
-
-    text = y[:]
-    y.clear()
-
-    for i in text:
-        y.append(ps.stem(i))
-
-    return " ".join(y)
-
-st.title("SMS Spam Classifier 🚀")
-input_sms = st.text_area("Enter your message:")
+input_sms = st.text_area("✉️ Enter your message:")
 
 if st.button('Predict'):
-
-    transformed_sms = transform_text(input_sms)
-
-    vector = cv.transform([transformed_sms]).toarray()
-
-    result = model.predict(vector)[0]
-
-    if result == 1:
-        st.warning("⚠️ Spam Message")
+    if input_sms.strip() == "":
+        st.warning("Please enter a message to classify.")
     else:
-        st.success("✅ Not Spam")
+        # Preprocess the message
+        transformed_sms = transform_text(input_sms)
+
+        # Vectorize
+        vector = cv.transform([transformed_sms]).toarray()
+
+        # Predict
+        result = model.predict(vector)[0]
+
+        # Display
+        if result == 1:
+            st.error("🚨 This message is **SPAM**.")
+        else:
+            st.success("✅ This message is **NOT SPAM**.")
