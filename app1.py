@@ -8,7 +8,7 @@ model = pickle.load(open('model.pkl', 'rb'))
 
 def transform_text(text):
     text = text.lower()  
-    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)  
+    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
     words = text.split()  
     words = [word for word in words if word not in ENGLISH_STOP_WORDS]  
     return " ".join(words)
